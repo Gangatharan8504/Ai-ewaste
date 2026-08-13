@@ -13,9 +13,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: MAIL_USERNAME
-        value: gangatharan949@gmail.com
+        value: cooperative.team8503@gmail.com
       - key: MAIL_PASSWORD
-        value: indb pgtm brux izqh
+        value: smoj mmng xobp gpuf
       - key: ALLOWED_ORIGINS
         value: "*"
       - key: CLOUDINARY_CLOUD_NAME

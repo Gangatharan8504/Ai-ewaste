@@ -3,8 +3,8 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'gangatharan949@gmail.com',
-    pass: 'indb pgtm brux izqh'
+    user: 'cooperative.team8503@gmail.com',
+    pass: 'smoj mmng xobp gpuf'
   }
 });
 
@@ -152,7 +152,7 @@ const getHtmlTemplate = (title, userName, contentHtml) => {
 const sendMailHelper = async (to, subject, html) => {
   try {
     await transporter.sendMail({
-      from: '"EcoSync" <gangatharan949@gmail.com>',
+      from: '"EcoSync" <cooperative.team8503@gmail.com>',
       to,
       subject,
       html
