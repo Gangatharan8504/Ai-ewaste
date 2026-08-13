@@ -243,7 +243,7 @@ const sendPickupSubmitted = async (email, deviceType, quantity, address, userNam
 /**
  * Sends Pickup Scheduled notification
  */
-const sendPickupScheduled = async (email, deviceType, date, time, adminNotes, userName = 'User') => {
+const sendPickupScheduled = async (email, deviceType, date, time, adminNotes, collectionOtp = '', userName = 'User') => {
   const subject = 'EcoSync - E-Waste Pickup Scheduled';
   const html = getHtmlTemplate(
     subject,
@@ -263,6 +263,12 @@ const sendPickupScheduled = async (email, deviceType, date, time, adminNotes, us
          <td class="value" style="font-weight: bold; color: #047857;">${time}</td>
        </tr>
        ${adminNotes ? `<tr><td class="label">Admin Notes:</td><td class="value">${adminNotes}</td></tr>` : ''}
+       ${collectionOtp ? `
+       <tr>
+         <td class="label" style="color: #059669; font-weight: bold;">Collection OTP:</td>
+         <td class="value" style="font-weight: 800; font-size: 16px; color: #059669; letter-spacing: 2px;">${collectionOtp}</td>
+       </tr>
+       ` : ''}
        <tr>
          <td class="label">Status:</td>
          <td class="value" style="color: #059669; font-weight: bold;">SCHEDULED</td>
@@ -291,11 +297,31 @@ const sendBetterImagesRequired = async (email, deviceType, userName = 'User') =>
 /**
  * Sends status updates (Completed, Rejected, etc.)
  */
-const sendTrackingStatusUpdate = async (email, deviceType, requestId, status, adminNotes = '', userName = 'User') => {
+const sendTrackingStatusUpdate = async (email, deviceType, requestId, status, adminNotes = '', collectionOtp = '', userName = 'User') => {
   let subject = `EcoSync - Pickup Request Update (#${requestId})`;
   let content = '';
 
-  if (status === 'REJECTED') {
+  if (status === 'APPROVED' || status === 'ACCEPTED') {
+    subject = 'EcoSync - Pickup Request Approved';
+    content = `<p>Your electronic waste pickup request has been approved! Here are the details:</p>
+               <table class="info-table">
+                 <tr>
+                   <td class="label">Device:</td>
+                   <td class="value">${deviceType}</td>
+                 </tr>
+                 <tr>
+                   <td class="label">Status:</td>
+                   <td class="value" style="color: #059669; font-weight: bold;">APPROVED</td>
+                 </tr>
+                 ${collectionOtp ? `
+                 <tr>
+                   <td class="label" style="color: #059669; font-weight: bold;">Collection OTP:</td>
+                   <td class="value" style="font-weight: 800; font-size: 16px; color: #059669; letter-spacing: 2px;">${collectionOtp}</td>
+                 </tr>
+                 ` : ''}
+               </table>
+               <p>Our team will contact you shortly to schedule the exact collection window. Please keep the device ready.</p>`;
+  } else if (status === 'REJECTED') {
     subject = 'EcoSync - Pickup Request Rejected';
     content = `<p>We regret to inform you that your e-waste pickup request has been rejected after review.</p>
                <table class="info-table">

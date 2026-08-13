@@ -184,6 +184,7 @@ function AdminRequestDetails() {
         {request.scheduledDate && <p><b>Scheduled Date:</b> {request.scheduledDate}</p>}
         {request.scheduledTime && <p><b>Scheduled Time:</b> {request.scheduledTime}</p>}
         {request.adminNotes && <p><b>Admin Notes:</b> {request.adminNotes}</p>}
+        {request.collectionOtp && <p><b>Collection OTP:</b> <span className="font-mono bg-emerald-55 text-emerald-850 px-2.5 py-0.5 rounded border border-emerald-200 font-bold">{request.collectionOtp}</span></p>}
 
       </div>
 

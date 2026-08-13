@@ -203,6 +203,14 @@ function MyRequests() {
                     </p>
                   )}
 
+                  {req.collectionOtp && (
+                    <div className="pt-1.5 pb-0.5">
+                      <span className="text-xs text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-150 font-bold tracking-wide">
+                        Collection OTP: {req.collectionOtp}
+                      </span>
+                    </div>
+                  )}
+
                   {req.adminNotes && (
                     <p className="text-sm text-gray-500 italic bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <strong className="text-gray-700 not-italic font-bold block mb-0.5">Admin Update:</strong>

@@ -20,6 +20,7 @@ const EwasteRequestSchema = new mongoose.Schema({
   scheduledDate: { type: String },
   scheduledTime: { type: String },
   adminNotes: { type: String },
+  collectionOtp: { type: String },
   
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

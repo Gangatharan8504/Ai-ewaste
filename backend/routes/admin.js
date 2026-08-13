@@ -79,6 +79,9 @@ router.put('/requests/:id/status', protect, adminOnly, async (req, res) => {
       return res.status(404).json({ message: 'Pickup request not found' });
     }
 
+    if (status === 'ACCEPTED' && !request.collectionOtp) {
+      request.collectionOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    }
     request.status = status;
     await request.save();
 
@@ -92,18 +95,18 @@ router.put('/requests/:id/status', protect, adminOnly, async (req, res) => {
       await sendBetterImagesRequired(request.user.email, request.deviceType || 'Electronic Device');
     } else if (status === 'ACCEPTED') {
       title = 'Pickup Request Approved';
-      message = `Your e-waste collection request #${request._id} has been approved by the admin.`;
-      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, 'APPROVED');
+      message = `Your e-waste collection request #${request._id} has been approved by the admin. Collection OTP generated: ${request.collectionOtp}`;
+      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, 'APPROVED', '', request.collectionOtp);
     } else if (status === 'COMPLETED') {
       title = 'Recycling Completed';
       message = `The recycling process for your device under request #${request._id} is now complete. Thank you!`;
-      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, 'COMPLETED');
+      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, 'COMPLETED', '', request.collectionOtp);
     } else if (status === 'COLLECTED') {
       title = 'Item Collected';
       message = `Our agent has successfully collected your electronic device for request #${request._id}.`;
-      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, 'COLLECTED');
+      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, 'COLLECTED', '', request.collectionOtp);
     } else {
-      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, status);
+      await sendTrackingStatusUpdate(request.user.email, request.deviceType || 'Electronic Device', request._id, status, '', request.collectionOtp);
     }
 
     const notification = new Notification({
@@ -138,6 +141,9 @@ router.put('/requests/:id/schedule', protect, adminOnly, async (req, res) => {
       return res.status(404).json({ message: 'Pickup request not found' });
     }
 
+    if (!request.collectionOtp) {
+      request.collectionOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    }
     request.status = 'SCHEDULED';
     request.scheduledDate = scheduledDate;
     request.scheduledTime = scheduledTime;
@@ -150,7 +156,8 @@ router.put('/requests/:id/schedule', protect, adminOnly, async (req, res) => {
       request.deviceType || 'Electronic Device',
       scheduledDate,
       scheduledTime,
-      adminNotes
+      adminNotes,
+      request.collectionOtp
     );
 
     // Save user notifications
