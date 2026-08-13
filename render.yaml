@@ -18,6 +18,8 @@ services:
         value: smoj mmng xobp gpuf
       - key: ALLOWED_ORIGINS
         value: "*"
+      - key: FRONTEND_URL
+        value: "https://e-waste-management-azure.vercel.app"
       - key: CLOUDINARY_CLOUD_NAME
         value: e-waste
       - key: CLOUDINARY_API_KEY

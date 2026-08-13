@@ -8,6 +8,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://e-waste-management-azure.vercel.app';
+
 const getHtmlTemplate = (title, userName, contentHtml) => {
   return `
     <!DOCTYPE html>
@@ -203,7 +205,7 @@ const sendWelcomeEmail = async (email, userName = 'User') => {
     userName,
     `<p>Your email address has been successfully verified! Welcome to the EcoSync family.</p>
      <p>Your account is now fully active. You can log in to schedule pickup requests, track your collections, and help recycle electronics responsibly.</p>
-     <div style="text-align: center;"><a href="https://ewaste-frontend-4jyx.onrender.com/login" class="btn-action">Log In to Your Account</a></div>`
+     <div style="text-align: center;"><a href="${FRONTEND_URL}/login" class="btn-action">Log In to Your Account</a></div>`
   );
   await sendMailHelper(email, subject, html);
 };
@@ -289,7 +291,7 @@ const sendBetterImagesRequired = async (email, deviceType, userName = 'User') =>
     userName,
     `<p>Our collection team inspected the details of your e-waste request for: <strong>${deviceType}</strong>.</p>
      <p>To safely approve and plan the logistics, we need clearer images of the electronic item. Please log in to your dashboard and update the images for this pickup request.</p>
-     <div style="text-align: center;"><a href="https://ewaste-frontend-4jyx.onrender.com/user/my-requests" class="btn-action">Update Request Details</a></div>`
+     <div style="text-align: center;"><a href="${FRONTEND_URL}/user/my-requests" class="btn-action">Update Request Details</a></div>`
   );
   await sendMailHelper(email, subject, html);
 };
