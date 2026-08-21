@@ -6,7 +6,7 @@ const fs = require('fs');
 const EwasteRequest = require('../models/EwasteRequest');
 const Notification = require('../models/Notification');
 const { protect } = require('../middleware/auth');
-const { sendPickupSubmitted } = require('../services/emailService');
+const { sendPickupSubmitted, sendPickupVerificationOtp } = require('../services/emailService');
 const { uploadImage } = require('../services/cloudinaryService');
 
 // Multer Storage Setup
@@ -33,7 +33,7 @@ const upload = multer({
 
 /**
  * POST /
- * Submits a new pickup request.
+ * Submits a new pickup request and sends verification OTP.
  */
 router.post('/', protect, upload.array('images', 5), async (req, res) => {
   const {
@@ -51,6 +51,7 @@ router.post('/', protect, upload.array('images', 5), async (req, res) => {
     }
 
     const qty = parseInt(quantity) || 1;
+    const submissionOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const pickupRequest = new EwasteRequest({
       user: req.user._id,
@@ -64,26 +65,128 @@ router.post('/', protect, upload.array('images', 5), async (req, res) => {
       pickupLng: pickupLng ? parseFloat(pickupLng) : undefined,
       remarks,
       imageUrls,
-      status: 'PENDING'
+      status: 'PENDING_OTP',
+      submissionOtp
     });
 
     await pickupRequest.save();
 
-    // Generate Notifications
+    // Send OTP verification email
+    await sendPickupVerificationOtp(
+      req.user.email,
+      deviceType,
+      qty,
+      pickupAddress,
+      submissionOtp,
+      req.user.firstName
+    );
+
+    const obj = pickupRequest.toObject();
+    obj.id = obj._id.toString();
+
+    return res.status(201).json({
+      message: 'Pickup request created! Verification OTP sent to your email.',
+      requestId: obj.id,
+      status: 'PENDING_OTP',
+      requiresOtp: true,
+      request: obj
+    });
+  } catch (error) {
+    console.error('Submit Request Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * POST /:id/verify-submission-otp
+ * Verifies the user submission OTP to activate the pickup request.
+ */
+router.post('/:id/verify-submission-otp', protect, async (req, res) => {
+  const { otp } = req.body;
+  if (!otp) {
+    return res.status(400).json({ message: 'OTP is required' });
+  }
+
+  try {
+    const request = await EwasteRequest.findOne({ _id: req.params.id, user: req.user._id });
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.status !== 'PENDING_OTP') {
+      return res.status(400).json({ message: 'This pickup request is already verified.' });
+    }
+
+    if (request.submissionOtp !== otp.trim()) {
+      return res.status(400).json({ message: 'Invalid OTP code. Please check your email and try again.' });
+    }
+
+    request.status = 'PENDING';
+    request.submissionOtp = undefined;
+    await request.save();
+
+    // Generate Notification
     const n = new Notification({
       user: req.user._id,
-      title: 'Pickup Request Submitted',
-      message: `Your pickup request for the ${brand || ''} ${deviceType || ''} was successfully submitted.`,
-      requestId: pickupRequest._id
+      title: 'Pickup Request Verified & Submitted',
+      message: `Your pickup request for ${request.brand || ''} ${request.deviceType || 'item'} has been verified and is under review by our admin.`,
+      requestId: request._id
     });
     await n.save();
 
     // Send confirmation email
-    await sendPickupSubmitted(req.user.email, deviceType, qty, pickupAddress, req.user.firstName);
+    await sendPickupSubmitted(
+      req.user.email,
+      request.deviceType,
+      request.quantity,
+      request.pickupAddress,
+      req.user.firstName
+    );
 
-    return res.status(201).json(pickupRequest);
+    const obj = request.toObject();
+    obj.id = obj._id.toString();
+
+    return res.status(200).json({
+      message: 'Pickup request verified and submitted successfully!',
+      request: obj
+    });
   } catch (error) {
-    console.error('Submit Request Error:', error.message);
+    console.error('Verify Submission OTP Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * POST /:id/resend-submission-otp
+ * Resends the submission OTP to the user's email.
+ */
+router.post('/:id/resend-submission-otp', protect, async (req, res) => {
+  try {
+    const request = await EwasteRequest.findOne({ _id: req.params.id, user: req.user._id });
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.status !== 'PENDING_OTP') {
+      return res.status(400).json({ message: 'This request is already verified.' });
+    }
+
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    request.submissionOtp = newOtp;
+    await request.save();
+
+    await sendPickupVerificationOtp(
+      req.user.email,
+      request.deviceType,
+      request.quantity,
+      request.pickupAddress,
+      newOtp,
+      req.user.firstName
+    );
+
+    return res.status(200).json({ message: 'New verification OTP sent to your email.' });
+  } catch (error) {
+    console.error('Resend Submission OTP Error:', error.message);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 });

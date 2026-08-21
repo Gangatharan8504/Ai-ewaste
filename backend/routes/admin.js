@@ -185,6 +185,56 @@ router.put('/requests/:id/schedule', protect, adminOnly, async (req, res) => {
 });
 
 /**
+ * PUT /requests/:id/collect
+ * Verifies user collection OTP and marks e-waste as collected.
+ */
+router.put('/requests/:id/collect', protect, adminOnly, async (req, res) => {
+  const { otp } = req.body;
+
+  try {
+    const request = await EwasteRequest.findById(req.params.id).populate('user', 'email firstName lastName');
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.collectionOtp && (!otp || otp.trim() !== request.collectionOtp.trim())) {
+      return res.status(400).json({ message: 'Invalid Collection OTP. Please verify the 6-digit code provided by the customer.' });
+    }
+
+    request.status = 'COLLECTED';
+    await request.save();
+
+    // Create notification
+    const n = new Notification({
+      user: request.user._id,
+      title: 'Item Collected & Verified',
+      message: `Our pickup agent has verified your OTP and successfully collected your ${request.deviceType || 'e-waste'}. Thank you!`,
+      requestId: request._id
+    });
+    await n.save();
+
+    // Send email
+    await sendTrackingStatusUpdate(
+      request.user.email,
+      request.deviceType || 'Electronic Device',
+      request._id,
+      'COLLECTED',
+      'Verified with collection OTP',
+      request.collectionOtp,
+      request.user.firstName
+    );
+
+    return res.status(200).json({
+      message: 'E-Waste verified and collected successfully!',
+      request
+    });
+  } catch (error) {
+    console.error('Admin Collection Verification Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
  * GET /stats
  * Dashboard stats metrics.
  */

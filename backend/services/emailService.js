@@ -357,7 +357,33 @@ const sendTrackingStatusUpdate = async (email, deviceType, requestId, status, ad
                <p>Log in to your dashboard to track details or contact support for queries.</p>`;
   }
 
-  const html = getHtmlTemplate(subject, userName, content);
+/**
+ * Sends Pickup Request Submission OTP for user verification
+ */
+const sendPickupVerificationOtp = async (email, deviceType, quantity, address, otpCode, userName = 'User') => {
+  const subject = `EcoSync - Verify Your Pickup Request (OTP: ${otpCode})`;
+  const html = getHtmlTemplate(
+    subject,
+    userName,
+    `<p>Thank you for initiating an electronic waste pickup request for <strong>${deviceType || 'Electronic Device'}</strong>.</p>
+     <p>Please enter the following 6-digit OTP code on the verification screen to confirm and validate your request:</p>
+     <div class="otp-box">${otpCode}</div>
+     <table class="info-table">
+       <tr>
+         <td class="label">Device:</td>
+         <td class="value">${deviceType || 'N/A'}</td>
+       </tr>
+       <tr>
+         <td class="label">Quantity:</td>
+         <td class="value">${quantity || 1}</td>
+       </tr>
+       <tr>
+         <td class="label">Pickup Address:</td>
+         <td class="value">${address || 'N/A'}</td>
+       </tr>
+     </table>
+     <p style="color: #6b7280; font-size: 13px;">This OTP is valid for 10 minutes. If you did not request this pickup, you can ignore this email.</p>`
+  );
   await sendMailHelper(email, subject, html);
 };
 
@@ -366,6 +392,7 @@ module.exports = {
   sendWelcomeEmail,
   sendPasswordResetOtp,
   sendPickupSubmitted,
+  sendPickupVerificationOtp,
   sendPickupScheduled,
   sendBetterImagesRequired,
   sendTrackingStatusUpdate

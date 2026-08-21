@@ -37,12 +37,15 @@ function AdminDashboard() {
 
   const statusColor = (status) => {
     switch (status) {
+      case "PENDING_OTP":
+        return "bg-amber-100 text-amber-800 border border-amber-300";
       case "PENDING":
         return "bg-yellow-100 text-yellow-700";
       case "ACCEPTED":
         return "bg-blue-100 text-blue-700";
       case "SCHEDULED":
         return "bg-indigo-100 text-indigo-700";
+      case "COLLECTED":
       case "COMPLETED":
         return "bg-green-100 text-green-700";
       case "REJECTED":
@@ -71,7 +74,8 @@ function AdminDashboard() {
 
   const statusLabels = {
     ALL: "All",
-    PENDING: "Pending",
+    PENDING: "Pending Approval",
+    PENDING_OTP: "Awaiting User OTP",
     ACCEPTED: "Approved",
     SCHEDULED: "Scheduled",
     COMPLETED: "Completed",
@@ -145,6 +149,7 @@ function AdminDashboard() {
           {[
             "ALL",
             "PENDING",
+            "PENDING_OTP",
             "ACCEPTED",
             "SCHEDULED",
             "COMPLETED",
