@@ -357,6 +357,10 @@ const sendTrackingStatusUpdate = async (email, deviceType, requestId, status, ad
                <p>Log in to your dashboard to track details or contact support for queries.</p>`;
   }
 
+  const html = getHtmlTemplate(subject, userName, content);
+  await sendMailHelper(email, subject, html);
+};
+
 /**
  * Sends Pickup Request Submission OTP for user verification
  */
