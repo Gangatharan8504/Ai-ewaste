@@ -287,4 +287,142 @@ router.get('/stats', protect, adminOnly, async (req, res) => {
   }
 });
 
+/**
+ * GET /users
+ * Lists all registered users with login analytics for admin.
+ */
+router.get('/users', protect, adminOnly, async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const mapped = users.map(u => {
+      const obj = u.toObject();
+      obj.id = obj._id.toString();
+      obj.fullName = `${obj.firstName || ''} ${obj.lastName || ''}`.trim();
+      obj.loginCount = obj.loginCount || (obj.enabled ? 1 : 0);
+      return obj;
+    });
+    return res.status(200).json(mapped);
+  } catch (error) {
+    console.error('Admin Fetch Users Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * GET /export/requests-csv
+ * Streams or returns a CSV string for all requests.
+ */
+router.get('/export/requests-csv', protect, adminOnly, async (req, res) => {
+  try {
+    const requests = await EwasteRequest.find()
+      .populate('user', 'firstName lastName email phone')
+      .sort({ createdAt: -1 });
+
+    const headers = [
+      'Request ID',
+      'Customer Name',
+      'Customer Email',
+      'Customer Phone',
+      'Device Type',
+      'Brand',
+      'Model',
+      'Condition',
+      'Quantity',
+      'Pickup Address',
+      'Status',
+      'Collection OTP',
+      'Scheduled Date',
+      'Scheduled Time',
+      'Admin Notes',
+      'Created Date'
+    ];
+
+    const rows = requests.map(r => {
+      const u = r.user || {};
+      const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'N/A';
+      return [
+        `"${r._id}"`,
+        `"${fullName.replace(/"/g, '""')}"`,
+        `"${(u.email || '').replace(/"/g, '""')}"`,
+        `"${(u.phone || '').replace(/"/g, '""')}"`,
+        `"${(r.deviceType || '').replace(/"/g, '""')}"`,
+        `"${(r.brand || '').replace(/"/g, '""')}"`,
+        `"${(r.model || '').replace(/"/g, '""')}"`,
+        `"${(r.condition || '').replace(/"/g, '""')}"`,
+        r.quantity || 1,
+        `"${(r.pickupAddress || '').replace(/"/g, '""')}"`,
+        `"${r.status || 'PENDING'}"`,
+        `"${r.collectionOtp || ''}"`,
+        `"${r.scheduledDate || ''}"`,
+        `"${r.scheduledTime || ''}"`,
+        `"${(r.adminNotes || '').replace(/"/g, '""')}"`,
+        `"${new Date(r.createdAt).toLocaleString()}"`
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="EcoSync_Requests.csv"');
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    console.error('Export Requests CSV Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * GET /export/users-csv
+ * Streams or returns a CSV string for all registered users.
+ */
+router.get('/export/users-csv', protect, adminOnly, async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+
+    const headers = [
+      'User ID',
+      'First Name',
+      'Last Name',
+      'Full Name',
+      'Email',
+      'Phone',
+      'Address',
+      'Pincode',
+      'Role',
+      'Verified Account',
+      'Login Count',
+      'Last Login',
+      'Registered Date'
+    ];
+
+    const rows = users.map(u => {
+      const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'N/A';
+      return [
+        `"${u._id}"`,
+        `"${(u.firstName || '').replace(/"/g, '""')}"`,
+        `"${(u.lastName || '').replace(/"/g, '""')}"`,
+        `"${fullName.replace(/"/g, '""')}"`,
+        `"${(u.email || '').replace(/"/g, '""')}"`,
+        `"${(u.phone || '').replace(/"/g, '""')}"`,
+        `"${(u.address || '').replace(/"/g, '""')}"`,
+        `"${(u.pincode || '').replace(/"/g, '""')}"`,
+        `"${u.role || 'USER'}"`,
+        u.enabled && u.emailVerified ? 'YES' : 'NO',
+        u.loginCount || (u.enabled ? 1 : 0),
+        u.lastLogin ? `"${new Date(u.lastLogin).toLocaleString()}"` : '"Never logged in"',
+        `"${new Date(u.createdAt).toLocaleString()}"`
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="EcoSync_Users.csv"');
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    console.error('Export Users CSV Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

@@ -13,6 +13,8 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
   enabled: { type: Boolean, default: false },
   emailVerified: { type: Boolean, default: false },
+  lastLogin: { type: Date },
+  loginCount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
