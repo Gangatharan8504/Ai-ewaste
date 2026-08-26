@@ -465,13 +465,17 @@ function MyRequests() {
                 {/* Right Image Thumbnail Column */}
                 {req.imageUrls && req.imageUrls.length > 0 && (
                   <div 
-                    className="relative w-28 h-28 shrink-0 rounded-2xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group"
+                    className="relative w-28 h-28 shrink-0 rounded-2xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group bg-gray-100 flex items-center justify-center"
                     onClick={() => openImage(req.imageUrls, 0)}
                   >
                     <img
                       src={getFileUrl(req.imageUrls[0])}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      alt="Thumbnail"
+                      alt="Device"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=300&q=80";
+                      }}
                     />
                     {req.imageUrls.length > 1 && (
                       <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">

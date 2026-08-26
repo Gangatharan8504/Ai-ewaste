@@ -9,7 +9,12 @@ const api = axios.create({
 
 export const getFileUrl = (filename) => {
   if (!filename) return "";
-  if (filename.startsWith("http://") || filename.startsWith("https://")) {
+  if (
+    filename.startsWith("http://") || 
+    filename.startsWith("https://") || 
+    filename.startsWith("data:") || 
+    filename.startsWith("blob:")
+  ) {
     return filename;
   }
   return `${API_BASE_URL}/files/${filename}`;

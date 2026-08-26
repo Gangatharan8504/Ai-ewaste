@@ -241,19 +241,33 @@ function AdminRequestDetails() {
 
         {/* IMAGES */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-150 text-left">
-          <h2 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
-            Uploaded Photos
-          </h2>
+          <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-800">
+              Uploaded Device Photos ({request.imageUrls?.length || 0})
+            </h2>
+            <span className="text-xs text-gray-400 font-medium">Click on any photo to inspect in full HD clarity</span>
+          </div>
           {request.imageUrls && request.imageUrls.length > 0 ? (
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-4 flex-wrap">
               {request.imageUrls.map((img, index) => (
-                <img
+                <div
                   key={index}
-                  src={getFileUrl(img)}
-                  className="w-24 h-24 object-cover rounded-xl border border-gray-200 cursor-pointer hover:opacity-90 transition shadow-xs"
+                  className="relative group rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-emerald-500 transition-all duration-300 shadow-xs cursor-pointer bg-gray-100"
                   onClick={() => openImage(index)}
-                  alt="E-waste item"
-                />
+                >
+                  <img
+                    src={getFileUrl(img)}
+                    className="w-32 h-32 md:w-36 md:h-36 object-cover group-hover:scale-110 transition duration-300"
+                    alt={`E-waste item ${index + 1}`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold">
+                    🔍 Inspect HD
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
@@ -513,35 +527,84 @@ function AdminRequestDetails() {
 
       {/* IMAGE VIEWER MODAL */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <button
-            onClick={() => setSelectedImage(null)}
-            className="absolute top-5 right-5 text-white text-3xl font-bold hover:text-gray-300 transition cursor-pointer"
-          >
-            ✕
-          </button>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 select-none">
+          
+          {/* Top Bar Controls */}
+          <div className="absolute top-5 left-6 right-6 flex items-center justify-between z-10">
+            <div className="text-white text-sm font-semibold bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20">
+              Photo {imageIndex + 1} of {request.imageUrls?.length} (Zoom: {Math.round(zoom * 100)}%)
+            </div>
 
-          <button
-            onClick={prevImage}
-            className="absolute left-5 text-white text-4xl hover:text-gray-300 transition cursor-pointer"
-          >
-            ‹
-          </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setZoom(prev => Math.min(4, prev + 0.3))}
+                className="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-xl text-sm font-bold border border-white/20 transition cursor-pointer"
+                title="Zoom In"
+              >
+                + Zoom
+              </button>
+              <button
+                onClick={() => setZoom(prev => Math.max(1, prev - 0.3))}
+                className="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-xl text-sm font-bold border border-white/20 transition cursor-pointer"
+                title="Zoom Out"
+              >
+                - Zoom
+              </button>
+              <button
+                onClick={() => setZoom(1)}
+                className="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-xl text-sm font-bold border border-white/20 transition cursor-pointer"
+                title="Reset Zoom"
+              >
+                Reset (100%)
+              </button>
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="bg-red-600 hover:bg-red-700 text-white w-9 h-9 flex items-center justify-center rounded-xl font-bold text-lg shadow-md transition ml-2 cursor-pointer"
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
 
-          <img
-            src={getFileUrl(selectedImage)}
-            onWheel={handleWheel}
-            style={{ transform: `scale(${zoom})` }}
-            className="max-h-[80vh] max-w-[80vw] rounded-xl shadow-2xl transition-transform duration-100"
-            alt="Enlarged e-waste"
-          />
+          {/* Navigation Arrows */}
+          {request.imageUrls?.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 text-white w-12 h-12 flex items-center justify-center rounded-full text-3xl font-bold border border-white/20 backdrop-blur-sm transition cursor-pointer z-10"
+              >
+                ‹
+              </button>
 
-          <button
-            onClick={nextImage}
-            className="absolute right-5 text-white text-4xl hover:text-gray-300 transition cursor-pointer"
-          >
-            ›
-          </button>
+              <button
+                onClick={nextImage}
+                className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 text-white w-12 h-12 flex items-center justify-center rounded-full text-3xl font-bold border border-white/20 backdrop-blur-sm transition cursor-pointer z-10"
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          {/* Main HD Image */}
+          <div className="max-h-[82vh] max-w-[85vw] overflow-hidden flex items-center justify-center">
+            <img
+              src={getFileUrl(selectedImage)}
+              onWheel={handleWheel}
+              style={{ 
+                transform: `scale(${zoom})`,
+                imageRendering: 'auto'
+              }}
+              className="max-h-[80vh] max-w-[82vw] object-contain rounded-2xl shadow-2xl transition-transform duration-150 cursor-grab active:cursor-grabbing border border-white/10"
+              alt="High Definition E-waste Device"
+            />
+          </div>
+
+          {/* Bottom Hint */}
+          <div className="absolute bottom-5 text-white/60 text-xs tracking-wide pointer-events-none">
+            💡 Tip: Use mouse scroll wheel or top zoom buttons to inspect small details & device condition.
+          </div>
+
         </div>
       )}
 
