@@ -58,13 +58,17 @@ function Login() {
       <div className="relative z-10 w-full max-w-md bg-white p-6 md:p-10 rounded-3xl shadow-2xl border border-gray-100 hover:shadow-emerald-100 transition">
 
         <div className="text-center mb-8">
-
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-400 bg-clip-text text-transparent">
+          <img
+            src="/logo.svg"
+            alt="EcoSync Logo"
+            className="w-14 h-14 mx-auto mb-3 object-contain drop-shadow-sm"
+          />
+          <h2 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-600 to-emerald-400 bg-clip-text text-transparent">
             Welcome Back
           </h2>
 
-          <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-            Sign in to continue to EcoSync
+          <p className="text-gray-500 mt-1 text-sm leading-relaxed">
+            Sign in to continue to EcoSync E-Waste Platform
           </p>
         </div>
 

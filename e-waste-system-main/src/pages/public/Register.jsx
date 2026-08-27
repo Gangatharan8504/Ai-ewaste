@@ -94,12 +94,17 @@ function Register() {
       <div className="w-full max-w-3xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         
         {/* ✅ GREEN HEADER SECTION */}
-        <div className="bg-emerald-600 text-white px-6 md:px-10 py-8 text-center relative">
+        <div className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-green-600 text-white px-6 md:px-10 py-8 text-center relative">
+          <img
+            src="/logo.svg"
+            alt="EcoSync Logo"
+            className="w-12 h-12 mx-auto mb-2.5 object-contain filter brightness-0 invert drop-shadow-sm"
+          />
           <h2 className="text-3xl font-bold flex items-center justify-center gap-2">
             <Sparkles className="h-6 w-6" /> Create Your Account
           </h2>
           <p className="text-emerald-100 mt-2 text-sm">
-            Join EcoSync and manage your e-waste responsibly
+            Join EcoSync and manage your electronic waste responsibly
           </p>
         </div>
 

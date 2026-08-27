@@ -100,12 +100,22 @@ function Navbar() {
       <div className="flex items-center gap-10">
 
         {/* LOGO */}
-        <h1
+        <div
           onClick={handleLogoClick}
-          className="text-2xl font-bold text-emerald-700 cursor-pointer tracking-wide"
+          className="flex items-center gap-2.5 cursor-pointer group select-none"
         >
-          EcoSync
-        </h1>
+          <img
+            src="/logo.svg"
+            alt="EcoSync E-Waste Logo"
+            className="w-9 h-9 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 drop-shadow-xs"
+          />
+          <h1 className="text-2xl font-extrabold text-emerald-700 tracking-tight flex items-center gap-1.5">
+            EcoSync
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block border border-emerald-200">
+              E-Waste
+            </span>
+          </h1>
+        </div>
 
         {/* NAV LINKS */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium">
