@@ -241,4 +241,137 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
+/**
+ * PUT /:id/cancel
+ * Cancels a pickup request by the user.
+ */
+router.put('/:id/cancel', protect, async (req, res) => {
+  try {
+    const request = await EwasteRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.user.toString() !== req.user._id.toString() && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Not authorized to cancel this request' });
+    }
+
+    if (['COLLECTED', 'COMPLETED'].includes(request.status)) {
+      return res.status(400).json({ message: 'Cannot cancel a request that has already been collected or completed.' });
+    }
+
+    request.status = 'CANCELLED';
+    request.adminNotes = req.body.reason || 'Cancelled by customer';
+    await request.save();
+
+    // Create Notification
+    const n = new Notification({
+      user: request.user,
+      title: 'Pickup Request Cancelled',
+      message: `Your pickup request for ${request.brand || ''} ${request.deviceType || 'item'} has been successfully cancelled.`,
+      requestId: request._id
+    });
+    await n.save();
+
+    const obj = request.toObject();
+    obj.id = obj._id.toString();
+
+    return res.status(200).json({
+      message: 'Pickup request cancelled successfully',
+      request: obj
+    });
+  } catch (error) {
+    console.error('Cancel Request Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * DELETE /:id
+ * Deletes a pickup request record.
+ */
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const request = await EwasteRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.user.toString() !== req.user._id.toString() && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Not authorized to delete this record' });
+    }
+
+    await EwasteRequest.findByIdAndDelete(req.params.id);
+
+    return res.status(200).json({ message: 'Pickup request record deleted successfully' });
+  } catch (error) {
+    console.error('Delete Request Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * PUT /:id/confirm-slot
+ * Confirms a proposed pickup slot.
+ */
+router.put('/:id/confirm-slot', protect, async (req, res) => {
+  try {
+    const request = await EwasteRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.user.toString() !== req.user._id.toString() && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    request.status = 'SCHEDULED';
+    await request.save();
+
+    const obj = request.toObject();
+    obj.id = obj._id.toString();
+
+    return res.status(200).json({
+      message: 'Pickup slot confirmed successfully',
+      request: obj
+    });
+  } catch (error) {
+    console.error('Confirm Slot Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * PUT /:id/request-reschedule
+ * Submits a reschedule request for a pickup.
+ */
+router.put('/:id/request-reschedule', protect, async (req, res) => {
+  try {
+    const { requestedDate, requestedSlot } = req.query;
+    const request = await EwasteRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Pickup request not found' });
+    }
+
+    if (request.user.toString() !== req.user._id.toString() && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    request.status = 'RESCHEDULE_REQUESTED';
+    request.adminNotes = `User requested reschedule: Date ${requestedDate || 'TBD'}, Slot: ${requestedSlot || 'TBD'}`;
+    await request.save();
+
+    const obj = request.toObject();
+    obj.id = obj._id.toString();
+
+    return res.status(200).json({
+      message: 'Reschedule request submitted to admin',
+      request: obj
+    });
+  } catch (error) {
+    console.error('Request Reschedule Error:', error.message);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

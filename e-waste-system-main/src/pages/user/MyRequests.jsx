@@ -75,20 +75,22 @@ function MyRequests() {
   const cancelRequest = async (id) => {
     if (!window.confirm("Are you sure you want to cancel this pickup request?")) return;
     try {
-      await api.put(`/requests/${id}/cancel`);
+      const res = await api.put(`/requests/${id}/cancel`);
+      setMessage(res.data?.message || "Pickup request cancelled successfully.");
       fetchRequests();
-    } catch {
-      alert("Cancel failed");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to cancel pickup request.");
     }
   };
 
   const deleteRequest = async (id) => {
     if (!window.confirm("Are you sure you want to delete this record?")) return;
     try {
-      await api.delete(`/requests/${id}`);
+      const res = await api.delete(`/requests/${id}`);
+      setMessage(res.data?.message || "Request record deleted successfully.");
       fetchRequests();
-    } catch {
-      alert("Delete failed");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete record.");
     }
   };
 
