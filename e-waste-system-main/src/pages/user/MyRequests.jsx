@@ -7,7 +7,21 @@ function MyRequests() {
   const location = useLocation();
   const [message, setMessage] = useState(location.state?.message || "");
 
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("cached_my_requests");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("cached_my_requests");
+    } catch {
+      return true;
+    }
+  });
   const [filter, setFilter] = useState("ALL");
 
   const [selectedImage, setSelectedImage] = useState(null);
@@ -57,8 +71,13 @@ function MyRequests() {
     try {
       const res = await api.get("/requests/my");
       setRequests(res.data);
-    } catch {
-      alert("Failed to load requests");
+      try {
+        sessionStorage.setItem("cached_my_requests", JSON.stringify(res.data));
+      } catch {}
+    } catch (err) {
+      console.error("Failed to load requests:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -232,9 +251,20 @@ function MyRequests() {
 
       <div className="max-w-4xl mx-auto space-y-6">
         
-        <h1 className="text-3xl font-extrabold text-gray-900 text-left">
-          My Pickup Requests
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-extrabold text-gray-900 text-left">
+            My Pickup Requests
+          </h1>
+
+          <button
+            onClick={() => { setLoading(true); fetchRequests(); }}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-700 bg-white border border-gray-200 px-3 py-1.5 rounded-xl font-semibold shadow-xs hover:border-emerald-300 transition cursor-pointer"
+            title="Refresh requests"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin text-emerald-600" : ""} />
+            <span>{loading ? "Refreshing..." : "Refresh"}</span>
+          </button>
+        </div>
 
         {/* Filter Bar */}
         <div className="flex gap-2 flex-wrap">
@@ -255,7 +285,25 @@ function MyRequests() {
 
         {/* Request Cards List */}
         <div className="space-y-4">
-          {filteredRequests.length === 0 ? (
+          {loading && requests.length === 0 ? (
+            // Shimmer Skeleton Loading Cards
+            <div className="space-y-4">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="bg-white rounded-3xl p-6 border border-gray-150 shadow-xs animate-pulse flex flex-col md:flex-row justify-between gap-6">
+                  <div className="space-y-3 flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="h-5 bg-gray-200 rounded-md w-32"></div>
+                      <div className="h-5 bg-emerald-100 rounded-full w-24"></div>
+                    </div>
+                    <div className="h-4 bg-gray-150 rounded w-48"></div>
+                    <div className="h-4 bg-gray-150 rounded w-64"></div>
+                    <div className="h-2 bg-gray-100 rounded w-full max-w-sm mt-3"></div>
+                  </div>
+                  <div className="w-28 h-28 bg-gray-200 rounded-2xl shrink-0 hidden sm:block"></div>
+                </div>
+              ))}
+            </div>
+          ) : filteredRequests.length === 0 ? (
             <div className="bg-white p-12 rounded-3xl border border-gray-150 text-center shadow-sm text-gray-500">
               No pickup requests found matching this status.
             </div>

@@ -27,6 +27,10 @@ const EwasteRequestSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+EwasteRequestSchema.index({ user: 1, createdAt: -1 });
+EwasteRequestSchema.index({ status: 1, createdAt: -1 });
+EwasteRequestSchema.index({ createdAt: -1 });
+
 EwasteRequestSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();

@@ -44,10 +44,8 @@ router.post('/', protect, upload.array('images', 5), async (req, res) => {
   try {
     let imageUrls = [];
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const url = await uploadImage(file);
-        if (url) imageUrls.push(url);
-      }
+      // Parallel upload to avoid sequential network delays
+      imageUrls = (await Promise.all(req.files.map(file => uploadImage(file)))).filter(Boolean);
     }
 
     const qty = parseInt(quantity) || 1;
@@ -71,15 +69,15 @@ router.post('/', protect, upload.array('images', 5), async (req, res) => {
 
     await pickupRequest.save();
 
-    // Send OTP verification email
-    await sendPickupVerificationOtp(
+    // Send OTP verification email in background without blocking response
+    sendPickupVerificationOtp(
       req.user.email,
       deviceType,
       qty,
       pickupAddress,
       submissionOtp,
       req.user.firstName
-    );
+    ).catch(err => console.error('Email send note:', err.message));
 
     const obj = pickupRequest.toObject();
     obj.id = obj._id.toString();
@@ -134,14 +132,14 @@ router.post('/:id/verify-submission-otp', protect, async (req, res) => {
     });
     await n.save();
 
-    // Send confirmation email
-    await sendPickupSubmitted(
+    // Send confirmation email in background
+    sendPickupSubmitted(
       req.user.email,
       request.deviceType,
       request.quantity,
       request.pickupAddress,
       req.user.firstName
-    );
+    ).catch(err => console.error('Email send note:', err.message));
 
     const obj = request.toObject();
     obj.id = obj._id.toString();
@@ -175,14 +173,14 @@ router.post('/:id/resend-submission-otp', protect, async (req, res) => {
     request.submissionOtp = newOtp;
     await request.save();
 
-    await sendPickupVerificationOtp(
+    sendPickupVerificationOtp(
       req.user.email,
       request.deviceType,
       request.quantity,
       request.pickupAddress,
       newOtp,
       req.user.firstName
-    );
+    ).catch(err => console.error('Email send note:', err.message));
 
     return res.status(200).json({ message: 'New verification OTP sent to your email.' });
   } catch (error) {
@@ -193,16 +191,20 @@ router.post('/:id/resend-submission-otp', protect, async (req, res) => {
 
 /**
  * GET /my
- * Lists all requests for logged in user.
+ * Lists all requests for logged in user with lean query and caching.
  */
 router.get('/my', protect, async (req, res) => {
   try {
-    const requests = await EwasteRequest.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const requests = await EwasteRequest.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .lean();
+
     const mapped = requests.map(r => {
-      const obj = r.toObject();
-      obj.id = obj._id.toString();
-      return obj;
+      r.id = r._id.toString();
+      return r;
     });
+
+    res.setHeader('Cache-Control', 'private, max-age=5, stale-while-revalidate=30');
     return res.status(200).json(mapped);
   } catch (error) {
     console.error('Fetch User Requests Error:', error.message);

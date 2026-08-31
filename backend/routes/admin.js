@@ -14,19 +14,20 @@ router.get('/requests', protect, adminOnly, async (req, res) => {
   try {
     const requests = await EwasteRequest.find()
       .populate('user', 'firstName lastName email phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     const mapped = requests.map(r => {
-      const obj = r.toObject();
-      obj.id = obj._id.toString();
-      if (obj.user) {
-        obj.userName = `${obj.user.firstName} ${obj.user.lastName}`;
-        obj.userEmail = obj.user.email;
-        obj.userPhone = obj.user.phone;
+      r.id = r._id.toString();
+      if (r.user) {
+        r.userName = `${r.user.firstName || ''} ${r.user.lastName || ''}`.trim() || 'Customer';
+        r.userEmail = r.user.email;
+        r.userPhone = r.user.phone;
       }
-      return obj;
+      return r;
     });
 
+    res.setHeader('Cache-Control', 'private, max-age=5, stale-while-revalidate=30');
     return res.status(200).json(mapped);
   } catch (error) {
     console.error('Admin Fetch Requests Error:', error.message);

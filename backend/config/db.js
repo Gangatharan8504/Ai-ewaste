@@ -1,11 +1,19 @@
 const mongoose = require('mongoose');
 
-const seedAdmin = async () => {
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+let adminSeeded = false;
+
+const seedAdminOnce = async () => {
+  if (adminSeeded) return;
   try {
     const User = require('../models/User');
-    let admin = await User.findOne({ email: 'admin@ewaste.com' });
+    const admin = await User.findOne({ email: 'admin@ewaste.com' }).lean();
     if (!admin) {
-      admin = new User({
+      const newAdmin = new User({
         firstName: 'System',
         lastName: 'Admin',
         email: 'admin@ewaste.com',
@@ -17,30 +25,46 @@ const seedAdmin = async () => {
         enabled: true,
         emailVerified: true
       });
-      await admin.save();
-      console.log('Seeded default Admin User: admin@ewaste.com / AdminPassword123');
-    } else {
-      admin.enabled = true;
-      admin.emailVerified = true;
-      admin.role = 'ADMIN';
-      admin.password = 'AdminPassword123';
-      await admin.save();
-      console.log('Synchronized default Admin User status & password reset.');
+      await newAdmin.save();
+      console.log('Seeded default Admin User: admin@ewaste.com');
     }
+    adminSeeded = true;
   } catch (err) {
-    console.error('Error seeding default Admin User:', err.message);
+    console.error('Admin initialization note:', err.message);
   }
 };
 
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://carrier-pilot:admin123@cluster0.kkdvuh4.mongodb.net/ewaste_db');
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    await seedAdmin();
-  } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
-    process.exit(1);
+  if (cached.conn) {
+    return cached.conn;
   }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    };
+
+    const uri = process.env.MONGODB_URI || 'mongodb+srv://carrier-pilot:admin123@cluster0.kkdvuh4.mongodb.net/ewaste_db';
+
+    cached.promise = mongoose.connect(uri, opts).then(async (m) => {
+      console.log('MongoDB Connected');
+      seedAdminOnce().catch(() => {});
+      return m;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    cached.promise = null;
+    console.error(`MongoDB Connection Error: ${error.message}`);
+    throw error;
+  }
+
+  return cached.conn;
 };
 
 module.exports = connectDB;

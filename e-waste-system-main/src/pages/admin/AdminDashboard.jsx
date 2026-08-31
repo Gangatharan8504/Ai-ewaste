@@ -10,15 +10,41 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("REQUESTS");
 
   // Requests state
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("cached_admin_requests");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("cached_admin_requests");
+    } catch {
+      return false;
+    }
+  });
 
   // Users state
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("cached_admin_users");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [userSearch, setUserSearch] = useState("");
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("cached_admin_users");
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     fetchRequests();
@@ -26,12 +52,14 @@ function AdminDashboard() {
   }, []);
 
   const fetchRequests = async () => {
-    setRequestsLoading(true);
     try {
       const res = await api.get("/admin/requests");
       const requestList = res.data && res.data.content ? res.data.content : (Array.isArray(res.data) ? res.data : []);
       const sorted = requestList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setRequests(sorted);
+      try {
+        sessionStorage.setItem("cached_admin_requests", JSON.stringify(sorted));
+      } catch {}
     } catch (err) {
       console.error("Failed to load requests:", err);
     } finally {
@@ -40,11 +68,13 @@ function AdminDashboard() {
   };
 
   const fetchUsers = async () => {
-    setUsersLoading(true);
     try {
       const res = await api.get("/admin/users");
       const userList = Array.isArray(res.data) ? res.data : [];
       setUsers(userList);
+      try {
+        sessionStorage.setItem("cached_admin_users", JSON.stringify(userList));
+      } catch {}
     } catch (err) {
       console.error("Failed to load users:", err);
     } finally {
