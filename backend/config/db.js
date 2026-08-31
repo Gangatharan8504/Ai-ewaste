@@ -5,10 +5,7 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-let adminSeeded = false;
-
 const seedAdminOnce = async () => {
-  if (adminSeeded) return;
   try {
     const User = require('../models/User');
     const admin = await User.findOne({ email: 'admin@ewaste.com' }).lean();
@@ -28,22 +25,20 @@ const seedAdminOnce = async () => {
       await newAdmin.save();
       console.log('Seeded default Admin User: admin@ewaste.com');
     }
-    adminSeeded = true;
   } catch (err) {
     console.error('Admin initialization note:', err.message);
   }
 };
 
 const connectDB = async () => {
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 8000,
       socketTimeoutMS: 45000,
     };
 

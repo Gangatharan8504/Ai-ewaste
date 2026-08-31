@@ -13,22 +13,29 @@ const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
-// Connect Database
-connectDB();
-
 // Middleware
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve file uploads statically
-// Expose both /uploads and /api/files to match frontend getFileUrl endpoints
 const uploadsDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'uploads');
 if (!process.env.VERCEL && !fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/files', express.static(uploadsDir));
+
+// Database connection middleware to ensure DB is connected before handling API requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection middleware error:', err.message);
+    return res.status(500).json({ message: 'Database connection failed. Please try again.' });
+  }
+});
 
 // Route Mounts
 app.use('/api/auth', authRoutes);

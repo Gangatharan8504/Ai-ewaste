@@ -177,10 +177,11 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Record login analytics
-    user.lastLogin = new Date();
-    user.loginCount = (user.loginCount || 0) + 1;
-    await user.save();
+    // Record login analytics asynchronously
+    User.updateOne(
+      { _id: user._id },
+      { $set: { lastLogin: new Date() }, $inc: { loginCount: 1 } }
+    ).catch(err => console.error('Login metric note:', err.message));
 
     // Generate JWT
     const token = jwt.sign(
